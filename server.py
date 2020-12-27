@@ -87,7 +87,7 @@ def start_tcp(ip, port):
         while True:
             curTime = time.time()
             print(curTime, " ", startTime, " ", curTime- startTime)
-            if((curTime - startTime) > 2.0):
+            if((curTime - startTime) > 10.0):
                 break
             data = connection.recv(16)
             if (data == b''):

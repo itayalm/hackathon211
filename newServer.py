@@ -40,7 +40,9 @@ def handle(client):
     while True:
         try:
             message = client.recv(16)
-            broadcast(message)
+            if (message == b''):
+                raise RuntimeError("Hi tommer!")
+            print(f'{bcolors.OKBLUE}received "%s" \n' % message)
         except:
             clients.remove(client)
             client.close()
@@ -51,6 +53,8 @@ def handle(client):
 def recieve():
     while True:
         #accept connection
+        udp_offer_thread = threading.Thread(target = send_offers_for_10_sec, args= ())
+        udp_offer_thread.start()
         client, address = server.accept()
         print("Connected with {}".format(str(address)))
 
@@ -80,9 +84,11 @@ def send_offers_for_10_sec():
 
 
 
+
 def main():
     offer_list.append(('172.1.0.123', 13117)) 
-    recieve
+
+    recieve()
 
 
 
