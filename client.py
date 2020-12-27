@@ -1,5 +1,6 @@
 import socket
 import sys
+import struct 
 
 class bcolors:
     HEADER = '\033[95m'
@@ -11,22 +12,42 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m' 
-
+ip = "172.1.0.123"
+UDP_port = 13117
 def main():
-    rec_offer("172.1.0.123", 13117)
+    rec_offer()
 
-def connec_to_server(ip, port):
+
+def rec_offer():
+    print(f"{bcolors.HEADER}Client started, listening for offer requests... \n")
+
+    # here we will do the recieving of udp
+
+    sock_UDP = socket.socket(socket.AF_INET, # Internet
+                        socket.SOCK_DGRAM) # UDP
+    sock_UDP.bind((ip, UDP_port))
+
+    magic,mType,targetPort = struct.unpack('Ibh',sock_UDP.recvfrom(1024)[0]) # buffer size is 1024 bytes
+    print(f"{bcolors.OKGREEN}Received message: magic {magic} type {mType} target Port {targetPort}\n")
+
+    if magic == 0xfeedbeef and mType == 0x2:
+        connec_to_server(targetPort)
+# end of UPD section @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ goku
+
+# Connect the socket to the port where the server is listening
+
+def connec_to_server(port):
     sock_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     server_address = (ip, port)
-    print(sys.stderr, f'connecting to %s port %s \n' % server_address)
+    print( f'{bcolors.HEADER}connecting to %s port %s \n' % server_address)
     sock_TCP.connect(server_address)
 
     try:
         
         # Send data
         message = b'This is the message.  It will be repeated.'
-        print(sys.stderr, '{bcolors.OKCYAN}sending "%s" \n' % message)
+        print( f'{bcolors.OKBLUE}sending "%s" \n' % message)
         sock_TCP.sendall(message)
 
         # Look for the response
@@ -36,37 +57,15 @@ def connec_to_server(ip, port):
         while amount_received < amount_expected:
             data = sock_TCP.recv(16)
             amount_received += len(data)
-            print(sys.stderr, 'received "%s"' % data)
+            print(f'{bcolors.OKGREEN}received "%s"' % data)
 
     finally:
-        print(sys.stderr, '{bcolors.FAIL}closing socket \n')
+        print(f'{bcolors.FAIL}closing socket \n')
         sock_TCP.close()
-
+        print(f'{bcolors.OKBLUE}Server disconnected, listening for offer requests...')
+        rec_offer()
 
 # Create a TCP/IP socket
 
-def rec_offer(ip,port):
-    print(f"{bcolors.HEADER}Client started, listening for offer requests... \n")
-
-    # here we will do the recieving of udp
-
-    UDP_IP = ip
-    UDP_PORT = port
-
-    sock_UDP = socket.socket(socket.AF_INET, # Internet
-                        socket.SOCK_DGRAM) # UDP
-    sock_UDP.bind((UDP_IP, UDP_PORT))
-
-    data, addr = sock_UDP.recvfrom(1024) # buffer size is 1024 bytes
-    print(f"{bcolors.OKCYAN}Received message: {data} from addr {addr} \n")
-
-    ip, port = addr
-
-    connec_to_server(ip, port)
-# end of UPD section @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ goku
-
-# Connect the socket to the port where the server is listening
-
 if __name__ == "__main__":
     main()
-    

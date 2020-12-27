@@ -1,16 +1,100 @@
-import socket as soc
+import socket
+import sys
+import time
+
+import struct
+TARGET_ip = '172.1.0.123'
+TARGET_port = 13117 
+TCP_port = 3189 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+def main():
+    send_offer(TARGET_ip, TARGET_port)
+    # create thread for sending udp
+    # create thred for recieving and handling tcp
+    # plus minus
+
+def send_offer_thread(name, ip, port):
+    UDP_IP = ip
+    UDP_PORT = port
+    datagram = struct.pack('Ibh',0xfeedbeef, 0x2, TCP_port)
+
+    while True:
+        logging.info(f"{bcolors.HEADER}Thread %s: UDP target IP: %s \n" % (name,  UDP_IP))
+        logging.info(f"{bcolors.HEADER}Thread %s: UDP target port: %s \n" % (name, UDP_PORT))
+        logging.info(f"{bcolors.OKCYAN}Thread %s: message: %s \n" % (name, datagram))
+
+        sock_UDP = socket.socket(socket.AF_INET, # Internet
+                            socket.SOCK_DGRAM) # UDP
+        # sock_UDP.bind(('172.1.0.123', OUR_PORT))
+        sock_UDP.sendto(datagram, (UDP_IP, UDP_PORT))
+        # sock_UDP.shutdown(socket.SHUT_RDWR)
+        sock_UDP.close()
+        time.sleep(name)
 
 
+# def send_offer(ip, port):
+#     UDP_IP = ip
+#     UDP_PORT = port
+#     OUR_PORT = 3189
+#     while True:
+#         datagram = struct.pack('Ibh',0xfeedbeef, 0x2, OUR_PORT)
+#         print(f"{bcolors.HEADER}UDP target IP: %s \n" % UDP_IP)
+#         print(f"{bcolors.HEADER}UDP target port: %s \n" % UDP_PORT)
+#         print(f"{bcolors.OKCYAN}message: %s \n" % datagram)
 
-s = soc.socket(soc.AF_INET, soc.SOCK_STREAM)
-s.bind(('172.1.0.123', 50000))
-s.listen(1)
-conn, addr = s.accept()
-while 1:
-    data = conn.recv(1024)
-    if not data:
-        break
-    print(data)
-    print(data)
-    conn.sendall(data)
-conn.close()
+#         sock_UDP = socket.socket(socket.AF_INET, # Internet
+#                             socket.SOCK_DGRAM) # UDP
+#         sock_UDP.sendto(datagram, (UDP_IP, UDP_PORT))
+#         # sock_UDP.shutdown(socket.SHUT_RDWR)
+#         sock_UDP.close()
+
+
+# Create a TCP/IP socket
+def start_tcp(ip, port):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # Bind the socket to the port
+    server_address = (ip, port)
+
+    print(f"{bcolors.HEADER}Client started, listening for offer requests... \n")
+    print(f'{bcolors.HEADER}starting up on %s port %s \n' % server_address)
+    sock.bind(server_address)
+
+
+    sock.listen(1)
+
+    while True:
+        # Wait for a connection
+        print(f'{bcolors.HEADER}waiting for a connection  \n')
+        connection, client_address = sock.accept()
+
+        try:
+            print(f'{bcolors.OKGREEN}connection from \n', client_address)
+
+            # Receive the data in small chunks and retransmit it
+            while True:
+                data = connection.recv(16)
+                print(f'{bcolors.OKBLUE}received "%s" \n' % data)
+                if data:
+                    print(f'{bcolors.OKGREEN}sending data back to the client \n')
+                    connection.sendall(data)
+                else:
+                    print(f'{bcolors.OKBLUE}no more data from \n', client_address)
+                    break
+                
+        finally:
+            # Clean up the connection
+            connection.close()
+
+if __name__ == "__main__":
+    main()
+    
