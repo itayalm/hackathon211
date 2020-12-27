@@ -20,7 +20,8 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 def main():
-    send_offer(TARGET_ip, TARGET_port)
+    while True:
+        send_offer(TARGET_ip, TARGET_port)
     # create thread for sending udp
     # create thred for recieving and handling tcp
     # plus minus
@@ -47,9 +48,8 @@ def main():
 def send_offer(ip, port):
     UDP_IP = ip
     UDP_PORT = port
-    OUR_PORT = 3189
     # while True:
-    datagram = struct.pack('Ibh',0xfeedbeef, 0x2, OUR_PORT)
+    datagram = struct.pack('Ibh',0xfeedbeef, 0x2, TCP_port)
     print(f"{bcolors.HEADER}UDP target IP: %s \n" % UDP_IP)
     print(f"{bcolors.HEADER}UDP target port: %s \n" % UDP_PORT)
     print(f"{bcolors.OKCYAN}message: %s \n" % datagram)
@@ -59,7 +59,7 @@ def send_offer(ip, port):
     sock_UDP.sendto(datagram, (UDP_IP, UDP_PORT))
     # sock_UDP.shutdown(socket.SHUT_RDWR)
     sock_UDP.close()
-    start_tcp(ip,OUR_PORT)
+    start_tcp(ip,TCP_port)
 
 
 # Create a TCP/IP socket
@@ -75,31 +75,37 @@ def start_tcp(ip, port):
 
     sock.listen(1)
 
-    while True:
-        # Wait for a connection
-        print(f'{bcolors.HEADER}waiting for a connection  \n')
-        connection, client_address = sock.accept()
+    # Wait for a connection
+    print(f'{bcolors.HEADER}waiting for a connection  \n')
+    connection, client_address = sock.accept()
 
-        try:
-            print(f'{bcolors.OKGREEN}connection from \n', client_address)
+    try:
+        print(f'{bcolors.OKGREEN}connection from \n', client_address)
 
-            # Receive the data in small chunks and retransmit it
-            while True:
-                data = connection.recv(16)
-                if (data == b''):
-                    raise RuntimeError("Hi tommer!")
-                print(f'{bcolors.OKBLUE}received "%s" \n' % data)
-                # if data:
-                #     print(f'{bcolors.OKGREEN}sending data back to the client \n')
-                #     connection.sendall(data)
-                # else:
-                #     print(f'{bcolors.OKBLUE}no more data from \n', client_address)
-                #     break
-                
-        finally:
-            # Clean up the connection
-            connection.close()
-
+        # Receive the data in small chunks and retransmit it
+        startTime = time.time()
+        while True:
+            curTime = time.time()
+            print(curTime, " ", startTime, " ", curTime- startTime)
+            if((curTime - startTime) > 2.0):
+                break
+            data = connection.recv(16)
+            if (data == b''):
+                raise RuntimeError("Hi tommer!")
+            print(f'{bcolors.OKBLUE}received "%s" \n' % data)
+            # if data:
+            #     print(f'{bcolors.OKGREEN}sending data back to the client \n')
+            #     connection.sendall(data)
+            # else:
+            #     print(f'{bcolors.OKBLUE}no more data from \n', client_address)
+            #     break
+            
+    finally:
+        # Clean up the connection
+        connection.close()
+        sock.shutdown(socket.SHUT_RDWR)
+        
 if __name__ == "__main__":
     main()
+
     
