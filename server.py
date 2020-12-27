@@ -6,6 +6,8 @@ import struct
 TARGET_ip = '172.1.0.123'
 TARGET_port = 13117 
 TCP_port = 3189 
+TIME_BETWEEN_OFFERS = 1
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -23,40 +25,41 @@ def main():
     # create thred for recieving and handling tcp
     # plus minus
 
-def send_offer_thread(name, ip, port):
-    UDP_IP = ip
-    UDP_PORT = port
-    datagram = struct.pack('Ibh',0xfeedbeef, 0x2, TCP_port)
-
-    while True:
-        logging.info(f"{bcolors.HEADER}Thread %s: UDP target IP: %s \n" % (name,  UDP_IP))
-        logging.info(f"{bcolors.HEADER}Thread %s: UDP target port: %s \n" % (name, UDP_PORT))
-        logging.info(f"{bcolors.OKCYAN}Thread %s: message: %s \n" % (name, datagram))
-
-        sock_UDP = socket.socket(socket.AF_INET, # Internet
-                            socket.SOCK_DGRAM) # UDP
-        # sock_UDP.bind(('172.1.0.123', OUR_PORT))
-        sock_UDP.sendto(datagram, (UDP_IP, UDP_PORT))
-        # sock_UDP.shutdown(socket.SHUT_RDWR)
-        sock_UDP.close()
-        time.sleep(name)
-
-
-# def send_offer(ip, port):
+# def send_offer(thread_name, ip, port):
 #     UDP_IP = ip
 #     UDP_PORT = port
-#     OUR_PORT = 3189
+#     datagram = struct.pack('Ibh',0xfeedbeef, 0x2, TCP_port)
+
 #     while True:
-#         datagram = struct.pack('Ibh',0xfeedbeef, 0x2, OUR_PORT)
-#         print(f"{bcolors.HEADER}UDP target IP: %s \n" % UDP_IP)
-#         print(f"{bcolors.HEADER}UDP target port: %s \n" % UDP_PORT)
-#         print(f"{bcolors.OKCYAN}message: %s \n" % datagram)
+#         print(f"{bcolors.HEADER}Thread %s: UDP target IP: %s \n" % (thread_name,  UDP_IP))
+#         print(f"{bcolors.HEADER}Thread %s: UDP target port: %s \n" % (thread_name, UDP_PORT))
+#         print(f"{bcolors.OKCYAN}Thread %s: message: %s \n" % (thread_name, datagram))
 
 #         sock_UDP = socket.socket(socket.AF_INET, # Internet
 #                             socket.SOCK_DGRAM) # UDP
+#         # sock_UDP.bind(('172.1.0.123', OUR_PORT))
 #         sock_UDP.sendto(datagram, (UDP_IP, UDP_PORT))
 #         # sock_UDP.shutdown(socket.SHUT_RDWR)
 #         sock_UDP.close()
+#         time.sleep(TIME_BETWEEN_OFFERS)
+
+
+def send_offer(ip, port):
+    UDP_IP = ip
+    UDP_PORT = port
+    OUR_PORT = 3189
+    # while True:
+    datagram = struct.pack('Ibh',0xfeedbeef, 0x2, OUR_PORT)
+    print(f"{bcolors.HEADER}UDP target IP: %s \n" % UDP_IP)
+    print(f"{bcolors.HEADER}UDP target port: %s \n" % UDP_PORT)
+    print(f"{bcolors.OKCYAN}message: %s \n" % datagram)
+
+    sock_UDP = socket.socket(socket.AF_INET, # Internet
+                        socket.SOCK_DGRAM) # UDP
+    sock_UDP.sendto(datagram, (UDP_IP, UDP_PORT))
+    # sock_UDP.shutdown(socket.SHUT_RDWR)
+    sock_UDP.close()
+    start_tcp(ip,OUR_PORT)
 
 
 # Create a TCP/IP socket
@@ -83,13 +86,15 @@ def start_tcp(ip, port):
             # Receive the data in small chunks and retransmit it
             while True:
                 data = connection.recv(16)
+                if (data == b''):
+                    raise RuntimeError("Hi tommer!")
                 print(f'{bcolors.OKBLUE}received "%s" \n' % data)
-                if data:
-                    print(f'{bcolors.OKGREEN}sending data back to the client \n')
-                    connection.sendall(data)
-                else:
-                    print(f'{bcolors.OKBLUE}no more data from \n', client_address)
-                    break
+                # if data:
+                #     print(f'{bcolors.OKGREEN}sending data back to the client \n')
+                #     connection.sendall(data)
+                # else:
+                #     print(f'{bcolors.OKBLUE}no more data from \n', client_address)
+                #     break
                 
         finally:
             # Clean up the connection

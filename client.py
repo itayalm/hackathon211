@@ -31,6 +31,7 @@ def rec_offer():
     print(f"{bcolors.OKGREEN}Received message: magic {magic} type {mType} target Port {targetPort}\n")
 
     if magic == 0xfeedbeef and mType == 0x2:
+        sock_UDP.close()
         connec_to_server(targetPort)
 # end of UPD section @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ goku
 
@@ -45,19 +46,12 @@ def connec_to_server(port):
 
     try:
         
-        # Send data
-        message = b'This is the message.  It will be repeated.'
-        print( f'{bcolors.OKBLUE}sending "%s" \n' % message)
-        sock_TCP.sendall(message)
+        # startMsg = sock_TCP.recv(104)
+        # print(f'{bcolors.OKGREEN} %s"' % startMsg)
 
-        # Look for the response
-        amount_received = 0
-        amount_expected = len(message)
-        
-        while amount_received < amount_expected:
-            data = sock_TCP.recv(16)
-            amount_received += len(data)
-            print(f'{bcolors.OKGREEN}received "%s"' % data)
+        # Send data
+        while True: 
+            sock_TCP.sendall(bytes(getch(),'UTF-8'))
 
     finally:
         print(f'{bcolors.FAIL}closing socket \n')
@@ -66,6 +60,20 @@ def connec_to_server(port):
         rec_offer()
 
 # Create a TCP/IP socket
+def getch():
+    import termios
+    import  tty
+    def _getch():
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(fd)
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch
+    return _getch()
+
 
 if __name__ == "__main__":
     main()
