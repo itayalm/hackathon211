@@ -51,7 +51,7 @@ def connec_to_server(port):
         
         # startMsg = sock_TCP.recv(1024)
         # print(f'{bcolors.OKGREEN} %s"' % startMsg)
-        sock_TCP.sendall(bytes('TeamName\n','UTF-8'))
+        sock_TCP.sendall(bytes('PussyOren\n','UTF-8'))
         # Send data
         while True: 
             # sock_TCP.sendall(bytes(getch(),'UTF-8'))
