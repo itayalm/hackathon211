@@ -28,6 +28,7 @@ server.listen()
 
 # Lists for clients 
 clients = []
+team_names = []
 offer_list = []
 
 # send message to all clients
@@ -44,8 +45,12 @@ def handle(client):
                 raise RuntimeError("Hi tommer!")
             print(f'{bcolors.OKBLUE}received "%s" \n' % message)
         except:
+            index = clients.index(client)
             clients.remove(client)
             client.close()
+            team_name = team_names[index]
+            print('{} left!'.format(team_name).encode('ascii'))
+            team_names.remove(team_name)
             break
 
 
@@ -58,7 +63,16 @@ def recieve():
         client, address = server.accept()
         print("Connected with {}".format(str(address)))
 
-        
+        # Request And Store Nickname
+        print("sned nameee")
+        client.send("Sned Mi TEEM name PLZ".encode('ascii'))
+        team_name = client.recv(1024).decode('ascii')
+        team_names.append(team_name)
+        clients.append(client)
+
+        # print team name
+        print("Team Name is {}".format(team_name))
+
         #start handling thread for client
         thread = threading.Thread(target=handle, args=(client,))
         thread.start()
@@ -86,7 +100,7 @@ def send_offers_for_10_sec():
 
 
 def main():
-    offer_list.append(('172.1.0.123', 13117)) 
+    offer_list.append(('172.1.0.123', 13117))
 
     recieve()
 

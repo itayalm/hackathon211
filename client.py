@@ -1,6 +1,8 @@
 import socket
 import sys
 import struct 
+import asyncio 
+import threading
 
 class bcolors:
     HEADER = '\033[95m'
@@ -28,7 +30,8 @@ def rec_offer():
     sock_UDP.bind((ip, UDP_port))
 
     magic,mType,targetPort = struct.unpack('Ibh',sock_UDP.recvfrom(1024)[0]) # buffer size is 1024 bytes
-    print(f"{bcolors.OKGREEN}Received message: magic {magic} type {mType} target Port {targetPort}\n")
+    print(f"{bcolors.OKGREEN}Received offer from {ip} attempting to connect\n")
+    print(f"{bcolors.OKGREEN}Received message: magic {magic} type {mType} target Port {targetPort} DELETE THIS \n")
 
     if magic == 0xfeedbeef and mType == 0x2:
         sock_UDP.close()
@@ -46,19 +49,25 @@ def connec_to_server(port):
 
     try:
         
-        # startMsg = sock_TCP.recv(104)
+        # startMsg = sock_TCP.recv(1024)
         # print(f'{bcolors.OKGREEN} %s"' % startMsg)
-
+        sock_TCP.sendall(bytes('TeamName\n','UTF-8'))
         # Send data
         while True: 
-            sock_TCP.sendall(bytes(getch(),'UTF-8'))
+            # sock_TCP.sendall(bytes(getch(),'UTF-8'))
+            rec(sock_TCP)
+            send(sock_TCP)
 
     finally:
         print(f'{bcolors.FAIL}closing socket \n')
         sock_TCP.close()
         print(f'{bcolors.OKBLUE}Server disconnected, listening for offer requests...')
         rec_offer()
-
+async def rec(sock_TCP):
+    data = sock_TCP.recv(1024)
+    print(data)
+async def send(sock_TCP):
+    sock_TCP.sendall(bytes(getch(),'UTF-8'))
 # Create a TCP/IP socket
 def getch():
     import termios
@@ -69,6 +78,7 @@ def getch():
         try:
             tty.setraw(fd)
             ch = sys.stdin.read(1)
+            if ch == '\x03' : sys.exit(0)
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return ch
