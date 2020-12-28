@@ -1,8 +1,6 @@
 import socket
 import sys
 import struct 
-import asyncio 
-import threading
 
 class bcolors:
     HEADER = '\033[95m'
@@ -29,53 +27,38 @@ def rec_offer():
                         socket.SOCK_DGRAM) # UDP
     sock_UDP.bind((ip, UDP_port))
 
-    data = sock_UDP.recvfrom(1024) # buffer size is 1024 bytes
-    magic,mType,targetPort = struct.unpack('Ibh',data[0])
-    udp_ip = data[1][0]
-    print(f"{bcolors.OKGREEN}Received offer from {udp_ip} attempting to connect  \n")
-    print(f"{bcolors.OKGREEN}Received message: magic {magic} type {mType} target Port {targetPort} DELETE THIS \n")
+    magic,mType,targetPort = struct.unpack('Ibh',sock_UDP.recvfrom(1024)[0]) # buffer size is 1024 bytes
+    print(f"{bcolors.OKGREEN}Received message: magic {magic} type {mType} target Port {targetPort}\n")
 
     if magic == 0xfeedbeef and mType == 0x2:
         sock_UDP.close()
-        connec_to_server(targetPort,udp_ip)
+        connec_to_server(targetPort)
 # end of UPD section @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ goku
 
 # Connect the socket to the port where the server is listening
 
-def connec_to_server(port, tip):
+def connec_to_server(port):
     sock_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    server_address = (tip, port)
+    server_address = (ip, port)
     print( f'{bcolors.HEADER}connecting to %s port %s \n' % server_address)
     sock_TCP.connect(server_address)
+
     try:
-        game_mode(sock_TCP)
+        
+        # startMsg = sock_TCP.recv(104)
+        # print(f'{bcolors.OKGREEN} %s"' % startMsg)
+
+        # Send data
+        while True: 
+            sock_TCP.sendall(bytes(getch(),'UTF-8'))
+
     finally:
         print(f'{bcolors.FAIL}closing socket \n')
         sock_TCP.close()
         print(f'{bcolors.OKBLUE}Server disconnected, listening for offer requests...')
         rec_offer()
-def game_mode(socket):
-    
-    socket.sendall(bytes('PussyOren\n','UTF-8'))
-    # sendThread = threading.Thread(target = rec, args =(socket))
-    # receiveThread = threading.Thread(target = send, args =(socket))
-    startMsg = socket.recv(1024)
-    print(f'{bcolors.OKGREEN} %s"' % startMsg)
-    while True:
-        socket.sendall(bytes(getch(),'UTF-8'))
 
-    # Send data
-    # sendThread.start()
-    # receiveThread.start()
-
-async def rec(socket):
-    while True:
-        data = socket.recv(1024)
-        print(data)
-def send(socket):
-    while True:
-        socket.sendall(bytes(getch(),'UTF-8'))
 # Create a TCP/IP socket
 def getch():
     import termios
@@ -86,7 +69,6 @@ def getch():
         try:
             tty.setraw(fd)
             ch = sys.stdin.read(1)
-            if ch == '\x03' : sys.exit(0)
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return ch

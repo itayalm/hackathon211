@@ -16,6 +16,8 @@ import threading
 import time 
 import struct
 
+time_is_up_flag = False
+
 # Connection Data
 host = '172.1.0.123'
 port = 3189
@@ -27,8 +29,11 @@ server.bind((host, port))
 server.listen()
 
 # Lists for clients 
+# List of client sockets
 clients = []
+# List of names of teams, each index of team name corresponds to the team with the same index in the clients list
 team_names = []
+# List of addresses to which we should send offer messages to
 offer_list = []
 
 # send message to all clients
@@ -76,7 +81,11 @@ def recieve():
         #start handling thread for client
         thread = threading.Thread(target=handle, args=(client,))
         thread.start()
+        
 
+def count_ten_seconds ():
+    time.sleep(10)
+    time_is_up_flag = True
 
 def send_offers_for_10_sec():
     # UDP_IP = ip
