@@ -17,15 +17,17 @@ import time
 import struct
 
 time_is_up_flag = False
+time_is_up_lock = threading.Lock()
 
 # Connection Data
 host = '172.1.0.123'
 port = 3189
-port_to_send_udp = 13117
+port_to_send_udp = 13116
 
 # starting server 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((host, port))
+server.setblocking(False)
 server.listen()
 
 # Lists for clients 
@@ -59,13 +61,26 @@ def handle(client):
             break
 
 
+     
+#counting 10 seconds
+def count_ten_seconds ():
+    time.sleep(10)
+    time_is_up_lock.acquire()
+    time_is_up_flag = True
+
+
 # recieving / listening function
 def recieve():
     while True:
         #accept connection
         udp_offer_thread = threading.Thread(target = send_offers_for_10_sec, args= ())
         udp_offer_thread.start()
-        client, address = server.accept()
+        count_ten_seconds_thread = threading.Thread(target = count_ten_seconds)
+        count_ten_seconds_thread.start()
+        while time_is_up_lock.locked() == False:
+            client, address = server.accept()
+        print("Ten seconds finished")
+        time_is_up_lock.release()
         print("Connected with {}".format(str(address)))
 
         # Request And Store Nickname
@@ -81,12 +96,7 @@ def recieve():
         #start handling thread for client
         thread = threading.Thread(target=handle, args=(client,))
         thread.start()
-        
-
-def count_ten_seconds ():
-    time.sleep(10)
-    time_is_up_flag = True
-
+   
 def send_offers_for_10_sec():
     # UDP_IP = ip
     # UDP_PORT = port

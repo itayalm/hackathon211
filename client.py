@@ -37,7 +37,10 @@ def rec_offer():
 
     if magic == 0xfeedbeef and mType == 0x2:
         sock_UDP.close()
-        connec_to_server(targetPort,udp_ip)
+        try:
+            connec_to_server(targetPort,udp_ip)
+        except ConnectionRefusedError: 
+            rec_offer()
 # end of UPD section @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ goku
 
 # Connect the socket to the port where the server is listening
