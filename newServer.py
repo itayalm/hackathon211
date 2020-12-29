@@ -95,14 +95,19 @@ def handle(client):
         pass
 
     # actual game, this runs seperatly for each client but all at the same time! (different threads)
+    
+    # sending game announcement message 
     game_announcement_string = "Welcome to Keyboard Spamming Battle Royale. \nGroup 1: \n== \n"
     for name in group1:
         game_announcement_string = game_announcement_string + f'{name}\n'
     game_announcement_string = game_announcement_string + "Group 2: \n== \n"
     for name in group2:
         game_announcement_string = game_announcement_string + f'{name}\n'
-    
+    game_announcement_string = game_announcement_string + "\nStart pressing keys on your keyboard as fast as you can!!"
     client.send(game_announcement_string.encode('ascii'))
+
+    print(f'{bcolors.OKGREEN}GAME STARTED!')
+
     readers = [client]
 
     while game_time_lock.locked() == False:
@@ -207,14 +212,48 @@ def mainLooper():
         #close and remove client sockets and team names
         # logging.info(f'Started closing and removing all client sockets and team names')
         # print(clients)
+
+        # looks like -> teamname: 14
+        score_by_teamname = {}
+        #counters for the score of each group, to see who won
+        group1_score = 0
+        group2_score = 0
+        #calculate the sum of all score by going through each client
         for c in clients: 
+            #getting the info out of each client
             team_name = clients[c][0] # !@!@
             score = clients[c][1]
+            group = clients[c][2]
+            score_by_teamname[team_name] = score
+            if group == 1:
+                group1_score = group1_score + score
+            else:
+                if group == 2: 
+                    group2_score = group2_score + score
             # del clients[c]
-            c.close
-            
-            print(f'{bcolors.OKGREEN}{team_name} left with {score} points!')
+            # close the socket of the team as it is not needed anymore
+            c.close    
+
+        #declare the winning team
+  
+        winning_team_decleration = f'Game over! \nGroup 1 typed in {group1_score} characters. Group 2 typed in {group2_score} characters.'
+         
+        if(group1_score > group2_score):
+            winning_team_decleration = winning_team_decleration + "Group 1 wins!\n\nCongratulations to the winners:\n==\n"
+            for name in group1:
+                winning_team_decleration = winning_team_decleration + f'{name}\n' 
+        else:
+            if(group2_score > group1_score):
+                winning_team_decleration = winning_team_decleration + "Group 2 wins!\n\nCongratulations to the winners:\n==\n" 
+                for name in group2:
+                    winning_team_decleration = winning_team_decleration + f'{name}\n' 
+            else:
+                winning_team_decleration = winning_team_decleration + "The game is a draw. No one wins..\n\nCongratulations to everyone!!" 
+
+        print(f'{bcolors.OKGREEN}{winning_team_decleration}')
+
         
+
         clients.clear()
         group1.clear()
         group2.clear()
