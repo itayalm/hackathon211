@@ -47,7 +47,7 @@ def rec_offer():
 
 def connec_to_server(port, tip):
     sock_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
+    sock_TCP.setblocking(0)
     server_address = (tip, port)
     print( f'{bcolors.HEADER}connecting to %s port %s \n' % server_address)
     sock_TCP.connect(server_address)

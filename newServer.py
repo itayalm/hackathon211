@@ -15,8 +15,13 @@ import socket
 import threading
 import time 
 import struct
+import select
 
-time_is_up_flag = False
+import logging
+
+logging.basicConfig(format='%(levelname)s - %(asctime)s: %(message)s',datefmt='%H:%M:%S', level=logging.DEBUG)
+
+
 time_is_up_lock = threading.Lock()
 
 # Connection Data
@@ -38,6 +43,9 @@ team_names = []
 # List of addresses to which we should send offer messages to
 offer_list = []
 
+# for testing we make client thread lists
+clients_threads = []
+
 # send message to all clients
 def broadcast(message):
     for client in clients:
@@ -45,7 +53,17 @@ def broadcast(message):
 
 # handling messages from clients
 def handle(client):
-    while True:
+     # Request And Store Nickname
+    print("sned nameee")
+    client.send("Sned Mi TEEM name PLZ".encode('ascii'))
+    team_name = client.recv(1024).decode('ascii')
+    team_names.append(team_name)
+    clients.append(client)
+    # print team name
+    print("Team Name is {}".format(team_name))
+
+        
+    while time_is_up_lock.locked() == False:
         try:
             message = client.recv(16)
             if (message == b''):
@@ -59,6 +77,8 @@ def handle(client):
             print('{} left!'.format(team_name).encode('ascii'))
             team_names.remove(team_name)
             break
+    
+    logging.info(f'{bcolors.OKCYAN} Quiting client!! @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
 
 
      
@@ -66,36 +86,57 @@ def handle(client):
 def count_ten_seconds ():
     time.sleep(10)
     time_is_up_lock.acquire()
-    time_is_up_flag = True
 
+def recieve_tcp_connections():
+    logging.info(f'Entered recieve_tcp_connections func')
+    readers = [server]
+
+    while time_is_up_lock.locked() == False:
+        readable, writable, errored = select.select(readers, [], [], 0.5)
+
+        for s in readable:
+            try:
+                if s == server:
+                    client, address = s.accept()
+                    print("Connected with {}".format(str(address)))
+                    logging.info(f'Connected with :{address}')
+                    #start handling thread for client
+                    thread = threading.Thread(target=handle, args=(client,))
+                    thread.start()
+                    clients_threads.append(thread)
+                else:
+                    pass
+            except Exception as ex:
+                print("We got an exception when attempting to get tcp connection!!", ex.args)
+            finally:
+                pass
 
 # recieving / listening function
-def recieve():
+def mainLooper():
+    logging.info(f'Entered MainLopper func')
     while True:
-        #accept connection
+        # start UDP spammer thread
+        logging.info(f'Starting and creating UDP spamming thread')
         udp_offer_thread = threading.Thread(target = send_offers_for_10_sec, args= ())
         udp_offer_thread.start()
+
+        # start 10 second counter thread
+        logging.info(f'Starting and creating 10sec counting thread')
         count_ten_seconds_thread = threading.Thread(target = count_ten_seconds)
         count_ten_seconds_thread.start()
-        while time_is_up_lock.locked() == False:
-            client, address = server.accept()
+        
+        #accept connection
+        logging.info(f'Calling recieve_tcp_connections func')
+        recieve_tcp_connections()
+        logging.info(f'Came back from recieve_tcp_connections func')
         print("Ten seconds finished")
+        for client_thread in clients_threads:
+            client_thread.join()
+        logging.info(f'Calling release of lock')
         time_is_up_lock.release()
-        print("Connected with {}".format(str(address)))
 
-        # Request And Store Nickname
-        print("sned nameee")
-        client.send("Sned Mi TEEM name PLZ".encode('ascii'))
-        team_name = client.recv(1024).decode('ascii')
-        team_names.append(team_name)
-        clients.append(client)
-
-        # print team name
-        print("Team Name is {}".format(team_name))
-
-        #start handling thread for client
-        thread = threading.Thread(target=handle, args=(client,))
-        thread.start()
+        
+       
    
 def send_offers_for_10_sec():
     # UDP_IP = ip
@@ -121,7 +162,7 @@ def send_offers_for_10_sec():
 def main():
     offer_list.append(('172.1.0.123', 13117))
 
-    recieve()
+    mainLooper()
 
 
 
