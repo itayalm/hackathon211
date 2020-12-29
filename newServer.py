@@ -62,21 +62,26 @@ def handle(client):
     # print team name
     print("Team Name is {}".format(team_name))
 
-        
+    readers = [client]
+
     while time_is_up_lock.locked() == False:
-        try:
-            message = client.recv(16)
-            if (message == b''):
-                raise RuntimeError("Hi tommer!")
-            print(f'{bcolors.OKBLUE}received "%s" \n' % message)
-        except:
-            index = clients.index(client)
-            clients.remove(client)
-            client.close()
-            team_name = team_names[index]
-            print('{} left!'.format(team_name).encode('ascii'))
-            team_names.remove(team_name)
-            break
+        readable, writable, errored = select.select(readers, [], [], 0.5)
+
+        for c in readable:
+            try:
+                message = c.recv(16)
+                if(message == b''):
+                    raise RuntimeError("Hi tommer!")
+                print(f'{bcolors.OKBLUE}received "%s" \n' % message)
+            except:
+                index = clients.index(c)
+                clients.remove(c)
+                c.close()
+                team_name = team_names[index]
+                print('{} left!'.format(team_name).encode('ascii'))
+                team_names.remove(team_name)
+                break
+
     
     logging.info(f'{bcolors.OKCYAN} Quiting client!! @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
 
@@ -130,11 +135,29 @@ def mainLooper():
         recieve_tcp_connections()
         logging.info(f'Came back from recieve_tcp_connections func')
         print("Ten seconds finished")
+        
+        # close all client threads and remove them
+        logging.info(f'Starting to remove all client threads')
         for client_thread in clients_threads:
             client_thread.join()
+            clients_threads.remove(client_thread)
+
+        #close and remove client sockets and team names
+        logging.info(f'Started closing and removing all client sockets and team names')
+        for c in clients:
+            index = clients.index(c)
+            clients.remove(c)
+            c.close()
+            team_name = team_names[index]
+            print('{} left!'.format(team_name).encode('ascii'))
+            team_names.remove(team_name)
+            break
+
         logging.info(f'Calling release of lock')
         time_is_up_lock.release()
 
+        #sleep for 10 seconds do nothing this is for testing
+        time.sleep(10)
         
        
    
@@ -147,9 +170,10 @@ def send_offers_for_10_sec():
     for i in range(0,10):
         for addr in offer_list:
             datagram = struct.pack('Ibh',0xfeedbeef, 0x2, port)
-            print(f"{bcolors.HEADER}UDP target IP: %s \n" % port_to_send_udp)
-            print(f"{bcolors.HEADER}UDP target port: %s \n" % port_to_send_udp)
-            print(f"{bcolors.OKCYAN}message: %s \n" % datagram)
+            print(f"{bcolors.OKCYAN}\nSending UDP packet to address {addr} with message {datagram}")
+            # print(f"{bcolors.HEADER}UDP target IP: %s \n" % port_to_send_udp)
+            # print(f"{bcolors.HEADER}UDP target port: %s \n" % port_to_send_udp)
+            # print(f"{bcolors.OKCYAN}message: %s \n" % datagram)
             udp_socket_out.sendto(datagram, addr)
             # sock_UDP.shutdown(socket.SHUT_RDWR)
         time.sleep(1)
