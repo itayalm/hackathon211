@@ -39,7 +39,10 @@ server.listen()
 
 # Lists for clients 
 # List of client sockets
-clients = []
+# dictionary of kind Socket: (str, int)
+# looks like client: (team_name, score)
+clients = {}
+
 # List of names of teams, each index of team name corresponds to the team with the same index in the clients list
 team_names = []
 # List of addresses to which we should send offer messages to
@@ -50,7 +53,7 @@ clients_threads = []
 
 # send message to all clients
 def broadcast(message):
-    for client in clients:
+    for client in clients.keys(): # !@!@
         client.send(message)
 
 # handling messages from clients
@@ -67,19 +70,22 @@ def handle(client):
         for c in readable:
             try:
                 team_name = c.recv(1024).decode('ascii')
-                team_names.append(team_name)
-                clients.append(c)
+                # team_names.append(team_name)
+                # clients.append(c)
+                clients[c] = (team_name, 0) #!@!@ 
                 print("Team Name is {}".format(team_name))
                 readers.remove(c)
 
             except:
+                print("EXPPPPPPPP TEAM NAME PHASE")
                 c.close()
                 print('{} Something is wrong with the given team name'.format(team_name).encode('ascii'))
                 return
 
     while(udp_spam_time_lock.locked() == False):
         pass
-    
+
+    # actual game, this runs seperatly for each client but all at the same time! (different threads)
     readers = [client]
 
     while game_time_lock.locked() == False:
@@ -91,13 +97,24 @@ def handle(client):
                 if(message == b''):
                     raise RuntimeError("Hi tommer!")
                 print(f'{bcolors.OKBLUE}received "%s" \n' % message)
+                # add 1 to the score of the scoring team
+                x = clients[c]
+                y = list(x)
+                y[1] = y[1] + 1
+                x = tuple(y)
+                clients[c] = x
             except:
-                index = clients.index(c)
-                clients.remove(c)
-                c.close()
-                team_name = team_names[index]
+                # index = clients.index(c)
+                # clients.remove(c)
+                # c.close()
+                # team_name = team_names[index]
+                # team_names.remove(team_name)
+                print("EXPPPPPPPP GAME")
+                team_name = clients[c][0] #!@!@
+                del clients[c]
+                c.close
                 print('{} left!'.format(team_name).encode('ascii'))
-                team_names.remove(team_name)
+
                 break
 
     
@@ -108,10 +125,10 @@ def handle(client):
 #counting 10 seconds
 def count_ten_seconds ():
     game_time_lock.acquire()
-    time.sleep(10)
+    time.sleep(3)
     udp_spam_time_lock.acquire()
     game_time_lock.release()
-    time.sleep(10)
+    time.sleep(5)
     game_time_lock.acquire()
 
 def recieve_tcp_connections():
@@ -142,6 +159,7 @@ def recieve_tcp_connections():
 def mainLooper():
     logging.info(f'Entered MainLopper func')
     while True:
+        
         # start UDP spammer thread
         logging.info(f'Starting and creating UDP spamming thread')
         udp_offer_thread = threading.Thread(target = send_offers_for_10_sec, args= ())
@@ -169,15 +187,17 @@ def mainLooper():
 
         #close and remove client sockets and team names
         logging.info(f'Started closing and removing all client sockets and team names')
-        for c in clients:
-            index = clients.index(c)
-            clients.remove(c)
-            c.close()
-            team_name = team_names[index]
+        print(clients)
+        for c in clients: 
+            team_name = clients[c][0] # !@!@
+            score = clients[c][1]
+            # del clients[c]
+            c.close
             print('{} left!'.format(team_name).encode('ascii'))
-            team_names.remove(team_name)
-            break
-
+            print(f'{bcolors.OKGREEN}{team_name} left with {score} points!')
+        
+        clients.clear()
+        
         logging.info(f'Calling release of lock')
         
         #sleep for 10 seconds do nothing this is for testing
