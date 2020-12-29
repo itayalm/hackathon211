@@ -1,9 +1,11 @@
 import socket
 import sys
+import tty
+import termios
 import struct 
 import asyncio 
 import threading
-
+import select 
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -16,9 +18,6 @@ class bcolors:
     UNDERLINE = '\033[4m' 
 ip = "172.1.0.123"
 UDP_port = 13117
-def main():
-    rec_offer()
-
 
 def rec_offer():
     print(f"{bcolors.HEADER}Client started, listening for offer requests... \n")
@@ -47,7 +46,7 @@ def rec_offer():
 
 def connec_to_server(port, tip):
     sock_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock_TCP.setblocking(0)
+    # sock_TCP.setblocking(0)
     server_address = (tip, port)
     print( f'{bcolors.HEADER}connecting to %s port %s \n' % server_address)
     sock_TCP.connect(server_address)
@@ -81,20 +80,16 @@ def send(socket):
         socket.sendall(bytes(getch(),'UTF-8'))
 # Create a TCP/IP socket
 def getch():
-    import termios
-    import  tty
-    def _getch():
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        try:
-            tty.setraw(fd)
-            ch = sys.stdin.read(1)
-            if ch == '\x03' : sys.exit(0)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
-    return _getch()
+    fd = sys.stdin.fileno()
+    old = termios.tcgetattr(fd)
+    try:
+        tty.setraw(fd)
+        data = sys.stdin.read(1)
+        if data == '\x03' : sys.exit(0)
+        return data
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
 
 if __name__ == "__main__":
-    main()
+    rec_offer()

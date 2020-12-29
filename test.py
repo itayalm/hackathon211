@@ -1,20 +1,34 @@
+
 import sys
+import tty
+import termios
 from signal import signal, SIGINT
 
+# def getch():
+#     import termios
+#     import  tty
+#     def _getch():
+#         fd = sys.stdin.fileno()
+#         old_settings = termios.tcgetattr(fd)
+#         try:
+#             tty.setraw(fd)
+#             ch = sys.stdin.read(1)
+#             if ch == '\x03' : sys.exit(0)
+#         finally:
+#             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+#         return ch
+    # return _getch()
 def getch():
-    import termios
-    import  tty
-    def _getch():
+        
         fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
+        old = termios.tcgetattr(fd)
         try:
             tty.setraw(fd)
-            ch = sys.stdin.read(1)
-            if ch == '\x03' : sys.exit(0)
+            data = sys.stdin.read(1)
+            if data == '\x03' : sys.exit(0)
+            return data
         finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
-    return _getch()
+            termios.tcsetattr(fd, termios.TCSADRAIN, old)
 while True : 
     print(getch())
     

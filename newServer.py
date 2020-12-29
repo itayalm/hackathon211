@@ -22,7 +22,9 @@ import logging
 logging.basicConfig(format='%(levelname)s - %(asctime)s: %(message)s',datefmt='%H:%M:%S', level=logging.DEBUG)
 
 
-time_is_up_lock = threading.Lock()
+udp_spam_time_lock = threading.Lock()
+
+game_time_lock = threading.Lock()
 
 # Connection Data
 host = '172.1.0.123'
@@ -56,15 +58,29 @@ def handle(client):
      # Request And Store Nickname
     print("sned nameee")
     client.send("Sned Mi TEEM name PLZ".encode('ascii'))
-    team_name = client.recv(1024).decode('ascii')
-    team_names.append(team_name)
-    clients.append(client)
-    # print team name
-    print("Team Name is {}".format(team_name))
 
+    # get team name from client
+    readers = [client]
+    while readers:
+        readable, writable, errored = select.select(readers, [], [], 0.5)
+
+        for c in readable:
+            try:
+                team_name = c.recv(1024).decode('ascii')
+                team_names.append(team_name)
+                clients.append(c)
+                print("Team Name is {}".format(team_name))
+                readers.remove(c)
+
+            except:
+                c.close()
+                print('{} Something is wrong with the given team name'.format(team_name).encode('ascii'))
+                return
+
+    
     readers = [client]
 
-    while time_is_up_lock.locked() == False:
+    while udp_spam_time_lock.locked() == False:
         readable, writable, errored = select.select(readers, [], [], 0.5)
 
         for c in readable:
@@ -90,13 +106,13 @@ def handle(client):
 #counting 10 seconds
 def count_ten_seconds ():
     time.sleep(10)
-    time_is_up_lock.acquire()
+    udp_spam_time_lock.acquire()
 
 def recieve_tcp_connections():
     logging.info(f'Entered recieve_tcp_connections func')
     readers = [server]
 
-    while time_is_up_lock.locked() == False:
+    while udp_spam_time_lock.locked() == False:
         readable, writable, errored = select.select(readers, [], [], 0.5)
 
         for s in readable:
@@ -154,7 +170,7 @@ def mainLooper():
             break
 
         logging.info(f'Calling release of lock')
-        time_is_up_lock.release()
+        udp_spam_time_lock.release()
 
         #sleep for 10 seconds do nothing this is for testing
         time.sleep(10)
