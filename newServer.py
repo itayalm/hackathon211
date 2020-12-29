@@ -77,10 +77,12 @@ def handle(client):
                 print('{} Something is wrong with the given team name'.format(team_name).encode('ascii'))
                 return
 
+    while(udp_spam_time_lock.locked() == False):
+        pass
     
     readers = [client]
 
-    while udp_spam_time_lock.locked() == False:
+    while game_time_lock.locked() == False:
         readable, writable, errored = select.select(readers, [], [], 0.5)
 
         for c in readable:
@@ -105,8 +107,12 @@ def handle(client):
      
 #counting 10 seconds
 def count_ten_seconds ():
+    game_time_lock.acquire()
     time.sleep(10)
     udp_spam_time_lock.acquire()
+    game_time_lock.release()
+    time.sleep(10)
+    game_time_lock.acquire()
 
 def recieve_tcp_connections():
     logging.info(f'Entered recieve_tcp_connections func')
@@ -150,8 +156,11 @@ def mainLooper():
         logging.info(f'Calling recieve_tcp_connections func')
         recieve_tcp_connections()
         logging.info(f'Came back from recieve_tcp_connections func')
-        print("Ten seconds finished")
         
+        print("Ten seconds finished")
+        while game_time_lock.locked() == False:
+            pass
+
         # close all client threads and remove them
         logging.info(f'Starting to remove all client threads')
         for client_thread in clients_threads:
@@ -170,12 +179,12 @@ def mainLooper():
             break
 
         logging.info(f'Calling release of lock')
-        udp_spam_time_lock.release()
-
+        
         #sleep for 10 seconds do nothing this is for testing
         time.sleep(10)
-        
-       
+        udp_spam_time_lock.release()
+        game_time_lock.release()
+
    
 def send_offers_for_10_sec():
     # UDP_IP = ip
