@@ -74,14 +74,14 @@ def game_mode(socket):
     # sendThread = threading.Thread(target = rec, args =(socket))
     # receiveThread = threading.Thread(target = send, args =(socket))
     read = False
-    for i in range(1,10): 
-        readable, writable, errored = select.select([socket], [], [],1)
-        if read and  readable.count == 0: break
+    for i in range(1,20): 
+        readable, writable, errored = select.select([socket], [], [],0.5)
         for s in readable: 
-            startMsg = socket.recv(1024)
+            startMsg = socket.recv(1024).decode('ascii')
             print(f'{bcolors.OKGREEN} %s here' % startMsg)
             read = True
-        # time.sleep(1)
+        if read: break
+        time.sleep(0.5)
          
     
     while True:

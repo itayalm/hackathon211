@@ -95,7 +95,8 @@ def handle(client):
                 return
 
     while(udp_spam_time_lock.locked() == False):
-        pass
+        time.sleep(0.1)
+        
 
     # actual game, this runs seperatly for each client but all at the same time! (different threads)
     
@@ -204,7 +205,7 @@ def mainLooper():
         
         # print("Ten seconds finished")
         while game_time_lock.locked() == False:
-            pass
+            time.sleep(0.1)
 
         # close all client threads and remove them
         # logging.info(f'Starting to remove all client threads')
@@ -253,7 +254,7 @@ def mainLooper():
             else:
                 winning_group_decleration = winning_group_decleration + "The game is a draw. No one wins..\n\nCongratulations to everyone!!" 
 
-        print(f'{bcolors.OKGREEN}{winning_group_decleration}\n\n')
+        # print(f'{bcolors.OKGREEN}{winning_group_decleration}\n\n')
 
         # print out the name of the best team and their score
         best_team_score = 0
@@ -263,7 +264,7 @@ def mainLooper():
                 best_team_score = score
                 best_team_name = team
 
-        winning_team_declaration = winning_group_decleration + '\n\n' + 'The team that typed the most characters, and recieved the largert score is:\n==\n{best_team_name}\nWith the score of {best_team_score}\n\n'
+        winning_team_declaration = winning_group_decleration + '\n\n' + f'The team that typed the most characters, and recieved the largert score is:\n==\n{best_team_name}\nWith the score of {best_team_score}\n\n'
         for c in clients: 
             c.send(bytes(f'{bcolors.OKCYAN}{winning_team_declaration}','ascii'))
             c.close()
