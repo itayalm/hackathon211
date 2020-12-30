@@ -5,7 +5,6 @@ import termios
 import struct 
 import asyncio 
 import threading
-import time 
 import select 
 class bcolors:
     HEADER = '\033[95m'
@@ -30,9 +29,10 @@ def rec_offer():
     sock_UDP.bind((ip, UDP_port))
 
     data = sock_UDP.recvfrom(1024) # buffer size is 1024 bytes
-    magic,mType,targetPort = struct.unpack('!Ibh',data[0])
+    magic,mType,targetPort = struct.unpack('Ibh',data[0])
     udp_ip = data[1][0]
     print(f"{bcolors.OKGREEN}Received offer from {udp_ip} attempting to connect  \n")
+    print(f"{bcolors.OKGREEN}Received message: magic {magic} type {mType} target Port {targetPort} DELETE THIS \n")
 
     if magic == 0xfeedbeef and mType == 0x2:
         sock_UDP.close()
@@ -46,48 +46,61 @@ def rec_offer():
 
 def connec_to_server(port, tip):
     sock_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # sock_TCP.setblocking(0)
     server_address = (tip, port)
     print( f'{bcolors.HEADER}connecting to %s port %s \n' % server_address)
-    ret = sock_TCP.connect(server_address)
-    if ret == 0: 
-        print(f"{bcolors.FAIL}failed to connect to %s %s \n" %server_address)
-        rec_offer() 
-    sock_TCP.setblocking(False)
+    sock_TCP.connect(server_address)
+
     try:
         game_mode(sock_TCP)
     finally:
-        readers = [sock_TCP]
-        while readers:
-            readable, writable, errored = select.select(readers, [], [], 0.5)
-            for s in readable:
-                data = s.recv(1024).decode('ascii')
-                print(f'{bcolors.OKGREEN}{data}')
-                readers.remove(s)
-
         print(f'{bcolors.FAIL}closing socket \n')
         sock_TCP.close()
-        print(f'{bcolors.OKBLUE}Server  disconnected, listening for offer requests...')
+        print(f'{bcolors.OKBLUE}Server disconnected, listening for offer requests...')
         rec_offer()
 def game_mode(socket):
-    
-    socket.sendall(bytes('Gal \n \t Dahan \n','UTF-8'))
+    readers = [socket]
+    writers = [socket]
+    readable, writeable, errored = select.select(readers,writers,[],0)
+    socket.sendall(bytes('PussyOren\n','UTF-8'))
     # sendThread = threading.Thread(target = rec, args =(socket))
     # receiveThread = threading.Thread(target = send, args =(socket))
-    read = False
-    for i in range(1,10): 
-        readable, writable, errored = select.select([socket], [], [],1)
-        if read and  readable.count == 0: break
-        for s in readable: 
-            startMsg = socket.recv(1024)
-            print(f'{bcolors.OKGREEN} %s here' % startMsg)
-            read = True
-        # time.sleep(1)
-         
     
+    for s in readable:
+            # try:
+        startMsg = socket.recv(1024)
+        print(f'{bcolors.OKGREEN} %s"' % startMsg)
+    print("after read")
+                # if data:
+                #     pass
+                # else:
+                #     (f'Connection was dropped by server: {s}')
+                #     s.close()
+                #     readers.remove(s)
+                #     writers.remove(s)
+
+    # while True:
+    #     socket.sendall(bytes(getch(),'UTF-8'))
+
+    # while writeable:       
+    while writeable.count > 0 :
+        socket.sendall(bytes(getch(),'UTF-8')) 
+        # except Exception as ex:
+        #     print("exception!!! in read select weird something "+ ex.args)
+        # finally:
+        #     pass
+
+    # Send data
+    # sendThread.start()
+    # receiveThread.start()
+
+async def rec(socket):
+    while True:
+        data = socket.recv(1024)
+        print(data)
+def send(socket):
     while True:
         socket.sendall(bytes(getch(),'UTF-8'))
-
-
 # Create a TCP/IP socket
 def getch():
     fd = sys.stdin.fileno()

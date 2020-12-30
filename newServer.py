@@ -27,13 +27,13 @@ udp_spam_time_lock = threading.Lock()
 
 game_time_lock = threading.Lock()
 
-length_of_spam_phase = 3
-length_of_game_phase = 5
+length_of_spam_phase = 10
+length_of_game_phase = 10
 
 # Connection Data
 host = '172.1.0.123'
-port = 3189
-port_to_send_udp = 13116
+port = 3191
+port_to_send_udp = 13117
 
 # starting server 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -65,7 +65,7 @@ def broadcast(message):
 def handle(client):
      # Request And Store Nickname
     # print("sned nameee")
-    client.send("Sned Mi TEEM name PLZ".encode('ascii'))
+    # client.send("Sned Mi TEEM name PLZ".encode('ascii'))
 
     # get team name from client
     readers = [client]
@@ -109,7 +109,7 @@ def handle(client):
     game_announcement_string = game_announcement_string + "\nStart pressing keys on your keyboard as fast as you can!!"
     client.send(game_announcement_string.encode('ascii'))
 
-    print(f'{bcolors.OKGREEN}GAME STARTED!')
+    # print(f'{bcolors.OKGREEN}GAME STARTED!')
 
     readers = [client]
 
@@ -235,7 +235,7 @@ def mainLooper():
                     group2_score = group2_score + score
             # del clients[c]
             # close the socket of the team as it is not needed anymore
-            c.close()
+
 
         #declare the winning group
   
@@ -263,9 +263,10 @@ def mainLooper():
                 best_team_score = score
                 best_team_name = team
 
-        winning_team_declaration = f'The team that typed the most characters, and recieved the largert score is:\n==\n{best_team_name}\nWith the score of {best_team_score}\n\n'
-        print(f'{bcolors.OKCYAN}{winning_team_declaration}')
-
+        winning_team_declaration = winning_group_decleration + '\n\n' + 'The team that typed the most characters, and recieved the largert score is:\n==\n{best_team_name}\nWith the score of {best_team_score}\n\n'
+        for c in clients: 
+            c.send(bytes(f'{bcolors.OKCYAN}{winning_team_declaration}','ascii'))
+            c.close()
 
 
         clients.clear()
@@ -288,8 +289,8 @@ def send_offers_for_10_sec():
                         socket.SOCK_DGRAM) # UDP
     for i in range(0,length_of_spam_phase):
         for addr in offer_list:
-            datagram = struct.pack('Ibh',0xfeedbeef, 0x2, port)
-            print(f"{bcolors.OKCYAN}\nSending UDP packet to address {addr} with message {datagram}")
+            datagram = struct.pack('!Ibh',0xfeedbeef, 0x2, port)
+            # print(f"{bcolors.OKCYAN}\nSending UDP packet to address {addr} with message {datagram}")
             # # print(f"{bcolors.HEADER}UDP target IP: %s \n" % port_to_send_udp)
             # # print(f"{bcolors.HEADER}UDP target port: %s \n" % port_to_send_udp)
             # # print(f"{bcolors.OKCYAN}message: %s \n" % datagram)

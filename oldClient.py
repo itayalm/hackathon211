@@ -27,7 +27,7 @@ def rec_offer():
                         socket.SOCK_DGRAM) # UDP
     sock_UDP.bind((ip, UDP_port))
 
-    magic,mType,targetPort = struct.unpack('Ibh',sock_UDP.recvfrom(1024)[0]) # buffer size is 1024 bytes
+    magic,mType,targetPort = struct.unpack('!Ibh',sock_UDP.recvfrom(1024)[0]) # buffer size is 1024 bytes
     print(f"{bcolors.OKGREEN}Received message: magic {magic} type {mType} target Port {targetPort}\n")
 
     if magic == 0xfeedbeef and mType == 0x2:
