@@ -27,6 +27,9 @@ udp_spam_time_lock = threading.Lock()
 
 game_time_lock = threading.Lock()
 
+length_of_spam_phase = 3
+length_of_game_phase = 5
+
 # Connection Data
 host = '172.1.0.123'
 port = 3189
@@ -147,10 +150,10 @@ def handle(client):
 #counting 10 seconds
 def count_ten_seconds ():
     game_time_lock.acquire()
-    time.sleep(3)
+    time.sleep(length_of_spam_phase)
     udp_spam_time_lock.acquire()
     game_time_lock.release()
-    time.sleep(5)
+    time.sleep(length_of_game_phase)
     game_time_lock.acquire()
 
 def recieve_tcp_connections():
@@ -232,27 +235,38 @@ def mainLooper():
                     group2_score = group2_score + score
             # del clients[c]
             # close the socket of the team as it is not needed anymore
-            c.close    
+            c.close()
 
-        #declare the winning team
+        #declare the winning group
   
-        winning_team_decleration = f'Game over! \nGroup 1 typed in {group1_score} characters. Group 2 typed in {group2_score} characters.'
+        winning_group_decleration = f'Game over! \nGroup 1 typed in {group1_score} characters. Group 2 typed in {group2_score} characters.'
          
         if(group1_score > group2_score):
-            winning_team_decleration = winning_team_decleration + "Group 1 wins!\n\nCongratulations to the winners:\n==\n"
+            winning_group_decleration = winning_group_decleration + "Group 1 wins!\n\nCongratulations to the winners:\n==\n"
             for name in group1:
-                winning_team_decleration = winning_team_decleration + f'{name}\n' 
+                winning_group_decleration = winning_group_decleration + f'{name}\n' 
         else:
             if(group2_score > group1_score):
-                winning_team_decleration = winning_team_decleration + "Group 2 wins!\n\nCongratulations to the winners:\n==\n" 
+                winning_group_decleration = winning_group_decleration + "Group 2 wins!\n\nCongratulations to the winners:\n==\n" 
                 for name in group2:
-                    winning_team_decleration = winning_team_decleration + f'{name}\n' 
+                    winning_group_decleration = winning_group_decleration + f'{name}\n' 
             else:
-                winning_team_decleration = winning_team_decleration + "The game is a draw. No one wins..\n\nCongratulations to everyone!!" 
+                winning_group_decleration = winning_group_decleration + "The game is a draw. No one wins..\n\nCongratulations to everyone!!" 
 
-        print(f'{bcolors.OKGREEN}{winning_team_decleration}')
+        print(f'{bcolors.OKGREEN}{winning_group_decleration}\n\n')
 
-        
+        # print out the name of the best team and their score
+        best_team_score = 0
+        best_team_name = ""
+        for team, score in score_by_teamname.items():
+            if score > best_team_score:
+                best_team_score = score
+                best_team_name = team
+
+        winning_team_declaration = f'The team that typed the most characters, and recieved the largert score is:\n==\n{best_team_name}\nWith the score of {best_team_score}\n\n'
+        print(f'{bcolors.OKCYAN}{winning_team_declaration}')
+
+
 
         clients.clear()
         group1.clear()
@@ -260,9 +274,10 @@ def mainLooper():
         # logging.info(f'Calling release of lock')
         
         #sleep for 10 seconds do nothing this is for testing
-        time.sleep(10)
+        # time.sleep(10)
         udp_spam_time_lock.release()
         game_time_lock.release()
+        print(f'{bcolors.OKBLUE}Game over, sending out offer requests...')
 
    
 def send_offers_for_10_sec():
@@ -271,10 +286,10 @@ def send_offers_for_10_sec():
     
     udp_socket_out = socket.socket(socket.AF_INET, # Internet
                         socket.SOCK_DGRAM) # UDP
-    for i in range(0,10):
+    for i in range(0,length_of_spam_phase):
         for addr in offer_list:
             datagram = struct.pack('Ibh',0xfeedbeef, 0x2, port)
-            # print(f"{bcolors.OKCYAN}\nSending UDP packet to address {addr} with message {datagram}")
+            print(f"{bcolors.OKCYAN}\nSending UDP packet to address {addr} with message {datagram}")
             # # print(f"{bcolors.HEADER}UDP target IP: %s \n" % port_to_send_udp)
             # # print(f"{bcolors.HEADER}UDP target port: %s \n" % port_to_send_udp)
             # # print(f"{bcolors.OKCYAN}message: %s \n" % datagram)
@@ -289,6 +304,7 @@ def send_offers_for_10_sec():
 
 def main():
     offer_list.append(('172.1.0.123', 13117))
+    offer_list.append(('172.1.0.122', 13117))
 
     mainLooper()
 
