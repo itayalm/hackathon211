@@ -17,7 +17,7 @@ import time
 import struct
 import select
 import random
-
+import scapy.all as scapy
 import logging
 
 logging.basicConfig(format='%(levelname)s - %(asctime)s: %(message)s',datefmt='%H:%M:%S', level=logging.DEBUG)
@@ -31,13 +31,16 @@ length_of_spam_phase = 10
 length_of_game_phase = 10
 
 # Connection Data
-host = '172.1.0.123'
-port = 3191
+# host = '172.1.0.123'
+host = scapy.get_if_addr('eth1')
+port = 2117
 port_to_send_udp = 13117
 
 # starting server 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# server.bind((host, port))
 server.bind((host, port))
+port = server.getsockname()[1]
 server.setblocking(False)
 server.listen()
 
@@ -99,7 +102,9 @@ def handle(client):
         
 
     # actual game, this runs seperatly for each client but all at the same time! (different threads)
-    
+    if (not group1) and (not group2):
+        print("No Participants GAME OVER")
+        return
     # sending game announcement message 
     game_announcement_string = "Welcome to Keyboard Spamming Battle Royale. \nGroup 1: \n== \n"
     for name in group1:
@@ -110,7 +115,7 @@ def handle(client):
     game_announcement_string = game_announcement_string + "\nStart pressing keys on your keyboard as fast as you can!!"
     client.send(game_announcement_string.encode('ascii'))
 
-    # print(f'{bcolors.OKGREEN}GAME STARTED!')
+    print(f'{bcolors.OKGREEN}GAME STARTED!')
 
     readers = [client]
 
@@ -185,7 +190,7 @@ def recieve_tcp_connections():
 # recieving / listening function
 def mainLooper():
     # logging.info(f'Entered MainLopper func')
-    print(f'{bcolors.OKBLUE} Server started, listening on IP address {host}')
+    print(f'{bcolors.HEADER} Server started, listening on IP address {host}')
     while True:
         
         # start UDP spammer thread
@@ -254,7 +259,7 @@ def mainLooper():
             else:
                 winning_group_decleration = winning_group_decleration + "The game is a draw. No one wins..\n\nCongratulations to everyone!!" 
 
-        # print(f'{bcolors.OKGREEN}{winning_group_decleration}\n\n')
+        print(f'{bcolors.OKGREEN}{winning_group_decleration}\n\n')
 
         # print out the name of the best team and their score
         best_team_score = 0
@@ -279,7 +284,7 @@ def mainLooper():
         # time.sleep(10)
         udp_spam_time_lock.release()
         game_time_lock.release()
-        print(f'{bcolors.OKBLUE}Game over, sending out offer requests...')
+        print(f'{bcolors.HEADER}Game over, sending out offer requests...')
 
    
 def send_offers_for_10_sec():
@@ -290,7 +295,7 @@ def send_offers_for_10_sec():
                         socket.SOCK_DGRAM) # UDP
     for i in range(0,length_of_spam_phase):
         for addr in offer_list:
-            datagram = struct.pack('!Ibh',0xfeedbeef, 0x2, port)
+            datagram = struct.pack('!IbH',0xfeedbeef, 0x2, port)
             # print(f"{bcolors.OKCYAN}\nSending UDP packet to address {addr} with message {datagram}")
             # # print(f"{bcolors.HEADER}UDP target IP: %s \n" % port_to_send_udp)
             # # print(f"{bcolors.HEADER}UDP target port: %s \n" % port_to_send_udp)
